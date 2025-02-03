@@ -14,6 +14,12 @@ export default function PlayPage() {
   const [gameOver, setGameOver] = useState(false)
   const [score, setScore] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const [highScore, setHighScore] = useState(() => {
+    const saved = localStorage.getItem('snakeHighScore')
+    return saved ? parseInt(saved) : 0
+  })
+  const [showCountdown, setShowCountdown] = useState(false)
+  const [countdown, setCountdown] = useState(3)
 
   const generateFood = useCallback(() => {
     const newFood = {
@@ -43,7 +49,7 @@ export default function PlayPage() {
   }, [snake])
 
   const moveSnake = useCallback(() => {
-    if (gameOver || isPaused) return
+    if (gameOver || isPaused || showCountdown) return
 
     const newSnake = [...snake]
     const head = {
@@ -53,6 +59,10 @@ export default function PlayPage() {
 
     if (checkCollision(head)) {
       setGameOver(true)
+      if (score > highScore) {
+        setHighScore(score)
+        localStorage.setItem('snakeHighScore', score.toString())
+      }
       return
     }
 
@@ -66,16 +76,22 @@ export default function PlayPage() {
     }
 
     setSnake(newSnake)
-  }, [snake, direction, food, gameOver, isPaused, checkCollision, generateFood])
+  }, [snake, direction, food, gameOver, isPaused, showCountdown, checkCollision, generateFood, score, highScore])
 
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if (gameOver) return
+      if (gameOver || showCountdown) return
 
-      // Prevent default scrolling behavior for arrow keys
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault()
       }
+
+      if (e.key === 'Escape') {
+        setIsPaused(prev => !prev)
+        return
+      }
+
+      if (isPaused) return
 
       const keyDirections = {
         ArrowUp: { x: 0, y: -1 },
@@ -99,12 +115,27 @@ export default function PlayPage() {
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [direction, gameOver])
+  }, [direction, gameOver, isPaused, showCountdown])
 
   useEffect(() => {
     const gameInterval = setInterval(moveSnake, GAME_SPEED)
     return () => clearInterval(gameInterval)
   }, [moveSnake])
+
+  const startCountdown = () => {
+    setShowCountdown(true)
+    setCountdown(3)
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          setShowCountdown(false)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
 
   const resetGame = () => {
     setSnake(INITIAL_SNAKE)
@@ -113,6 +144,7 @@ export default function PlayPage() {
     setGameOver(false)
     setScore(0)
     setIsPaused(false)
+    startCountdown()
   }
 
   const getCellContent = (x, y) => {
@@ -132,18 +164,19 @@ export default function PlayPage() {
     <div className="game-container">
       <div className="game-controls">
         <div className="score">Score: {score}</div>
+        <div className="score">High Score: {highScore}</div>
         <div className="space-x-4">
           <button
             onClick={() => setIsPaused(!isPaused)}
             className="game-button"
           >
-            {isPaused ? 'Resume' : 'Pause'}
+            {isPaused ? '▶ Resume' : '⏸ Pause'}
           </button>
           <button
             onClick={() => navigate('/')}
             className="game-button"
           >
-            Exit
+            🏠 Exit
           </button>
         </div>
       </div>
@@ -161,17 +194,48 @@ export default function PlayPage() {
         })}
       </div>
 
-      {gameOver && (
+      {(gameOver || showCountdown) && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2 className="text-2xl font-bold text-white mb-4">Game Over!</h2>
-            <p className="text-white mb-4">Final Score: {score}</p>
-            <button
-              onClick={resetGame}
-              className="game-button"
-            >
-              Play Again
-            </button>
+            {showCountdown ? (
+              <div className="game-over-score">{countdown}</div>
+            ) : (
+              <>
+                <h2 className="game-over-title">Game Over!</h2>
+                <div className="game-over-score">{score}</div>
+                {score === highScore && score > 0 && (
+                  <p className="text-yellow-400 mb-4">🏆 New High Score! 🏆</p>
+                )}
+                <button
+                  onClick={resetGame}
+                  className="game-button"
+                >
+                  🎮 Play Again
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isPaused && !gameOver && !showCountdown && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className="text-2xl font-bold text-white mb-4">Game Paused</h2>
+            <div className="space-y-4">
+              <button
+                onClick={() => setIsPaused(false)}
+                className="game-button"
+              >
+                ▶ Resume
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="game-button"
+              >
+                🏠 Exit to Menu
+              </button>
+            </div>
           </div>
         </div>
       )}
