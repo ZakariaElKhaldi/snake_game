@@ -227,7 +227,7 @@ snake-game/
    - Clean up code
    - Add comments
 
-## �� Challenges Faced
+## 📝 Challenges Faced
 
 1. **Snake Movement**
    - Challenge: Implementing smooth snake movement while preventing illegal moves
@@ -268,10 +268,10 @@ snake-game/
 
 ## 🎮 Game Controls
 
-- ⬆️ Up Arrow: Move Up
-- ⬇️ Down Arrow: Move Down
-- ⬅️ Left Arrow: Move Left
-- ➡️ Right Arrow: Move Right
+- ⬆️ Up Arrow / k: Move Up
+- ⬇️ Down Arrow / j: Move Down
+- ⬅️ Left Arrow / h: Move Left
+- ➡️ Right Arrow / l: Move Right
 - ESC: Pause Game
 
 ## 🔧 Technical Details
